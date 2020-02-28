@@ -18,6 +18,11 @@ const NotesService = {
     return knex('notes')
       .where({ id })
       .delete()
+  },
+  updateNote(knex, id, noteFields) {
+    return knex('notes')
+      .where({ id })
+      .update(noteFields);
   }
 }
 

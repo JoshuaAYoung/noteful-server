@@ -55,14 +55,59 @@ notesRouter
 
 notesRouter
   .route('/:id')
-  .get((req, res, next) => {
-    const { id } = req.params
-
-    NotesService.getById(req.app.get('db'), id)
+  .all((req, res, next) => {
+    const knexInstance = req.app.get('db')
+    NotesService.getById(knexInstance, req.params.id)
       .then(note => {
-        return res
-          .json(note)
+        if (!note) {
+          return res.status(404).json({
+            error: { message: `Note doesn't exist` }
+          })
+        }
+        res.note = note
+        next()
       })
+      .catch(next)
+  })
+  .get((req, res, next) => {
+    res.json(serializeNotes(note))
+  })
+  .delete((req, res, next) => {
+    NotesService.deleteNote(
+      req.app.get('db'),
+      req.params.id
+    )
+      .then(deleted => {
+        res.status(204).end()
+      })
+      .catch(next)
+  })
+  .patch(jsonParser, (req, res, next) => {
+    const { name, modified, folderid, content } = req.body;
+    const newNote = { name, modified, folderid, content }
+
+    for (const [key, value] of Object.entries(newNote)) {
+      if (value == null) {
+        return res.status(400).json({
+          error: { message: `Missing '${key}' in request body` }
+        })
+      }
+    }
+
+    newNote.name = name;
+    newNote.modified = modified;
+    newNote.folderid = folderid;
+    newNote.content = content;
+
+    NotesService.updateNote(
+      req.app.get('db'),
+      req.params.id,
+      newNote
+    )
+      .then(updated => {
+        res.status(204).end()
+      })
+      .catch(next)
   })
 
 module.exports = notesRouter
