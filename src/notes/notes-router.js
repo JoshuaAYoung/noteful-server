@@ -2,7 +2,7 @@ const path = require('path')
 const express = require('express');
 const jsonParser = express.json();
 const xss = require('xss');
-const notesService = require('./notes-service.js');
+const NotesService = require('./notes-service.js');
 const notesRouter = express.Router()
 
 const serializeNotes = note => ({
@@ -16,15 +16,14 @@ const serializeNotes = note => ({
 notesRouter
   .route('/')
   .get((req, res, next) => {
-    notesService.getAllNotes(req.app.get('db'))
+    NotesService.getAllNotes(req.app.get('db'))
       .then(notes => {
-        console.log(notes)
         res.json(notes.map(serializeNotes))
       })
       .catch(next)
   })
 
-  .post((req, res, next) => {
+  .post(jsonParser, (req, res, next) => {
     const { name, modified, folderid, content } = req.body;
     const newNote = { name, modified, folderid, content }
 
@@ -41,7 +40,7 @@ notesRouter
     newNote.folderid = folderid;
     newNote.content = content;
 
-    notesService.insertNote(
+    NotesService.insertNote(
       req.app.get('db'),
       newNote
     )
@@ -59,7 +58,7 @@ notesRouter
   .get((req, res, next) => {
     const { id } = req.params
 
-    notesService.getById(req.app.get('db'), id)
+    NotesService.getById(req.app.get('db'), id)
       .then(note => {
         return res
           .json(note)

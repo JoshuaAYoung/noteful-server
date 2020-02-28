@@ -2,7 +2,7 @@ const path = require('path')
 const express = require('express');
 const jsonParser = express.json();
 const xss = require('xss');
-const foldersService = require('./folders-service');
+const FoldersService = require('./folders-service.js');
 const foldersRouter = express.Router()
 
 const serializeFolders = folder => ({
@@ -15,14 +15,14 @@ const serializeFolders = folder => ({
 foldersRouter
   .route('/')
   .get((req, res, next) => {
-    foldersService.getAllFolders(req.app.get('db'))
+    FoldersService.getAllFolders(req.app.get('db'))
       .then(folders => {
         res.status(200).json(folders.map(serializeFolders))
       })
       .catch(next)
   })
 
-  .post((req, res, next) => {
+  .post(jsonParser, (req, res, next) => {
 
     const { name } = req.body;
 
@@ -31,11 +31,16 @@ foldersRouter
         .status(400).send('Folder name is required');
     }
 
-    foldersService.insertFolder(req.app.get('db'), name)
+    const newFolder = { name }
+
+    FoldersService.insertFolder(
+      req.app.get('db'),
+      newFolder)
       .then(result => {
-        return res.status(201)
+        res
+          .status(201)
           .location(`/api/folders/${result.id}`)
-          .json(result)
+          .json(serializeFolders(result))
       })
       .catch(next)
 
@@ -47,7 +52,7 @@ foldersRouter
   .get((req, res, next) => {
     const { id } = req.params
 
-    foldersService.getById(req.app.get('db'), id)
+    FoldersService.getById(req.app.get('db'), id)
       .then(folder => {
         return res
           .json(folder)
@@ -56,7 +61,7 @@ foldersRouter
   .delete((req, res, next) => {
     const { id } = req.params;
 
-    foldersService.deleteFolder(req.app.get('db'), id)
+    FoldersService.deleteFolder(req.app.get('db'), id)
       .then(deleted => {
         res.status(204).end()
       })
